@@ -3,19 +3,21 @@
     <div class="table-wrapper">
       <el-table :data="tableData" style="width: 100%" stripe="stripe" border="border">
         <el-table-column type="index" label="编号" width="80" align="center" />
-        <el-table-column prop="user_name" label="发布者" align="center" />
-        <el-table-column prop="comment" label="评论数" align="center" width="200" />
-        <el-table-column label="点赞数" align="center">
+        <el-table-column prop="user_name" label="发布者" align="center" width="100" />
+        <el-table-column prop="video_description" label="视频描述" align="center" />
+        <el-table-column prop="comment" label="评论数" align="center" width="100" />
+        <el-table-column prop="video_share" label="分享数" align="center" width="100" />
+        <el-table-column label="点赞数" align="center" width="100">
           <template slot-scope="scope">
-            <span>{{ scope.row['like'].count }}</span>
+            <span>{{ scope.row['support'].count }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="发布时间" align="center" />
-        <el-table-column prop="talk_status" label="状态" align="center">
+        <el-table-column prop="create_time" label="发布时间" align="center" width="100" />
+        <el-table-column prop="video_status" label="状态" align="center" width="100">
           <template slot-scope="scope">
             <span
-              :class="statusTxt(scope.row['talk_status'])[0]"
-            >{{ statusTxt(scope.row['talk_status'])[1] }}</span>
+              :class="statusTxt(scope.row['video_status'])[0]"
+            >{{ statusTxt(scope.row['video_status'])[1] }}</span>
           </template>
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="200" align="center">
@@ -23,17 +25,17 @@
             <el-button
               type="text"
               size="small"
-              @click.native.prevent="showPreviewTalg(scope.$index, tableData)"
+              @click.native.prevent="showPreviewVideo(scope.$index, tableData)"
             >查看内容</el-button>
             <el-button
               type="text"
               size="small"
-              @click.native.prevent="showDisableTalk(scope.$index, tableData)"
-            >{{ statusTxt(scope.row['talk_status'])[2] }}</el-button>
+              @click.native.prevent="showDisableVideo(scope.$index, tableData)"
+            >{{ statusTxt(scope.row['video_status'])[2] }}</el-button>
             <el-button
               type="text"
               size="small"
-              @click.native.prevent="showDeleteTalk(scope.$index, tableData)"
+              @click.native.prevent="showDeleteVideo(scope.$index, tableData)"
             >删除</el-button>
           </template>
         </el-table-column>
@@ -57,28 +59,29 @@
       <span>是否{{ dialogTxt }}</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeDisableDialog">取 消</el-button>
-        <el-button type="primary" @click="disableTalkCallback">确 定</el-button>
+        <el-button type="primary" @click="disableVideoCallback">确 定</el-button>
       </span>
     </el-dialog>
     <el-dialog title="心情删除" :visible.sync="deleteDialogVisible" width="30%">
       <span>是否删除</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeDeleteDialog">取 消</el-button>
-        <el-button type="primary" @click="deleteTalkCallback">确 定</el-button>
+        <el-button type="primary" @click="deleteVideoCallback">确 定</el-button>
       </span>
     </el-dialog>
-    <el-dialog title="心情内容" :visible.sync="previewDialogVisible" width="30%">
+    <el-dialog title="视频内容" :visible.sync="previewDialogVisible" width="30%">
       <div class="content-wrapper">
-        <p class="txt">{{ talkContent.content }}</p>
-        <div class="image-wrapper">
-          <img v-for="(url,index) in talkContent.images" :key="index" class="image" :src="url" alt="">
-        </div>
+        <p>展示图：</p>
+        <img class="preview-banner" :src="bannerUrl" alt="">
+        <p>视频：</p>
+        <video width="100%" height="240" :src="videoUrl" type="video/mp4" controls />
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script>
+import { getVideoList, disbaleVideo, deleteVideo } from '@/api/video'
 export default {
   name: 'User',
   data() {
@@ -86,8 +89,10 @@ export default {
       page: 1,
       count: 10,
       dialogTxt: '禁用',
-      talkId: 0,
-      talkContent: {
+      videoId: 0,
+      videoUrl: '',
+      bannerUrl: '',
+      videoContent: {
         content: '',
         images: []
       },
@@ -119,12 +124,12 @@ export default {
     closeDisableDialog() {
       this.disableDialogVisible = false
     },
-    showDeleteTalk(index, tableData) {
-      const talkId = tableData[index].talk_id
-      this.talkId = talkId
+    showDeleteVideo(index, tableData) {
+      const videoId = tableData[index].video_id
+      this.videoId = videoId
       this.openDeleteDialog()
     },
-    async deleteTalkCallback() {
+    async deleteVideoCallback() {
       const loading = this.$loading({
         lock: true,
         text: `${this.dialogTxt}中...`,
@@ -132,14 +137,14 @@ export default {
         background: 'rgba(0, 0, 0, 0.2)'
       })
       try {
-        // const { data } = await deleteTalk({
-        //   talk_id: this.talkId
-        // })
-        // if (data.noerr === 1) {
-        //   throw new Error()
-        // }
-        // this.page = 1
-        // this.fetchRequest(this.page, this.count)
+        const { data } = await deleteVideo({
+          video_id: this.videoId
+        })
+        if (data.noerr === 1) {
+          throw new Error()
+        }
+        this.page = 1
+        this.fetchRequest(this.page, this.count)
         this.$message.success('删除成功')
       } catch (err) {
         this.$message.error('删除失败')
@@ -148,13 +153,13 @@ export default {
         this.closeDeleteDialog()
       }
     },
-    showDisableTalk(index, tableData) {
-      const talkId = tableData[index].talk_id
-      this.talkId = talkId
-      this.dialogTxt = this.statusTxt(tableData[index].talk_status)[2]
+    showDisableVideo(index, tableData) {
+      const videoId = tableData[index].video_id
+      this.videoId = videoId
+      this.dialogTxt = this.statusTxt(tableData[index].video_status)[2]
       this.opneDisableDialog()
     },
-    async disableTalkCallback() {
+    async disableVideoCallback() {
       const loading = this.$loading({
         lock: true,
         text: `${this.dialogTxt}中...`,
@@ -162,13 +167,12 @@ export default {
         background: 'rgba(0, 0, 0, 0.2)'
       })
       try {
-        // const { data } = await disableTalk({
-        //   talk_id: this.talkId
-        // })
-        // console.log(data)
-        // if (data.noerr === 1) {
-        //   throw new Error()
-        // }
+        const { data } = await disbaleVideo({
+          video_id: this.videoId
+        })
+        if (data.noerr === 1) {
+          throw new Error()
+        }
         this.$message.success(`${this.dialogTxt}成功`)
         this.page = 1
         this.fetchRequest(this.page, this.count)
@@ -179,20 +183,23 @@ export default {
         this.closeDisableDialog()
       }
     },
-    showPreviewTalg(index, tableData) {
-      const contentEncode = tableData[index].talk_content
-      this.talkContent = JSON.parse(contentEncode)
+    showPreviewVideo(index, tableData) {
+      this.videoUrl = ''
+      this.bannerUrl = ''
+      const bannerUrl = tableData[index].video_banner
+      const videoUrl = tableData[index].video_url
+      this.videoUrl = videoUrl
+      this.bannerUrl = bannerUrl
       this.openPreviewDialog()
     },
     async fetchRequest(page, count) {
       try {
-        // const { data } = await getTalkList({
-        //   page,
-        //   count,
-        //   type: 'all'
-        // })
-        // console.log(data)
-        // this.tableData = data.data
+        const { data } = await getVideoList({
+          page,
+          count
+        })
+        console.log(data)
+        this.tableData = data.data
       } catch (err) {
         this.$message.error('获取列表失败')
       }
@@ -243,8 +250,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
 }
-.image-wrapper .image {
-  margin: 8px 0 0 8px;
-  width: 30%;
+.preview-banner {
+  width: 80%;
 }
 </style>
