@@ -7,15 +7,15 @@
         <el-table-column prop="comment" label="评论数" align="center" width="200" />
         <el-table-column label="点赞数" align="center">
           <template slot-scope="scope">
-            <span>{{ scope.row['like'].count }}</span>
+            <span>{{ scope.row['support'].count }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="create_time" label="发布时间" align="center" />
-        <el-table-column prop="talk_status" label="状态" align="center">
+        <el-table-column prop="topic_status" label="状态" align="center">
           <template slot-scope="scope">
             <span
-              :class="statusTxt(scope.row['talk_status'])[0]"
-            >{{ statusTxt(scope.row['talk_status'])[1] }}</span>
+              :class="statusTxt(scope.row['topic_status'])[0]"
+            >{{ statusTxt(scope.row['topic_status'])[1] }}</span>
           </template>
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="200" align="center">
@@ -28,12 +28,12 @@
             <el-button
               type="text"
               size="small"
-              @click.native.prevent="showDisableTalk(scope.$index, tableData)"
-            >{{ statusTxt(scope.row['talk_status'])[2] }}</el-button>
+              @click.native.prevent="showDisableTopic(scope.$index, tableData)"
+            >{{ statusTxt(scope.row['topic_status'])[2] }}</el-button>
             <el-button
               type="text"
               size="small"
-              @click.native.prevent="showDeleteTalk(scope.$index, tableData)"
+              @click.native.prevent="showDeleteTopic(scope.$index, tableData)"
             >删除</el-button>
           </template>
         </el-table-column>
@@ -57,21 +57,21 @@
       <span>是否{{ dialogTxt }}</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeDisableDialog">取 消</el-button>
-        <el-button type="primary" @click="disableTalkCallback">确 定</el-button>
+        <el-button type="primary" @click="disableTopicCallback">确 定</el-button>
       </span>
     </el-dialog>
     <el-dialog title="心情删除" :visible.sync="deleteDialogVisible" width="30%">
       <span>是否删除</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeDeleteDialog">取 消</el-button>
-        <el-button type="primary" @click="deleteTalkCallback">确 定</el-button>
+        <el-button type="primary" @click="deleteTopicCallback">确 定</el-button>
       </span>
     </el-dialog>
     <el-dialog title="心情内容" :visible.sync="previewDialogVisible" width="30%">
       <div class="content-wrapper">
-        <p class="txt">{{ talkContent.content }}</p>
+        <p class="txt">{{ topicContent.text }}</p>
         <div class="image-wrapper">
-          <img v-for="(url,index) in talkContent.images" :key="index" class="image" :src="url" alt="">
+          <img v-for="(url,index) in topicContent.images" :key="index" class="image" :src="url" alt="">
         </div>
       </div>
     </el-dialog>
@@ -79,6 +79,7 @@
 </template>
 
 <script>
+import { getTopicList, disableTopic, deleteTopic } from '@/api/topic'
 export default {
   name: 'User',
   data() {
@@ -86,9 +87,9 @@ export default {
       page: 1,
       count: 10,
       dialogTxt: '禁用',
-      talkId: 0,
-      talkContent: {
-        content: '',
+      topicId: 0,
+      topicContent: {
+        text: '',
         images: []
       },
       disableDialogVisible: false,
@@ -119,12 +120,12 @@ export default {
     closeDisableDialog() {
       this.disableDialogVisible = false
     },
-    showDeleteTalk(index, tableData) {
-      const talkId = tableData[index].talk_id
-      this.talkId = talkId
+    showDeleteTopic(index, tableData) {
+      const topicId = tableData[index].topic_id
+      this.topicId = topicId
       this.openDeleteDialog()
     },
-    async deleteTalkCallback() {
+    async deleteTopicCallback() {
       const loading = this.$loading({
         lock: true,
         text: `${this.dialogTxt}中...`,
@@ -132,14 +133,14 @@ export default {
         background: 'rgba(0, 0, 0, 0.2)'
       })
       try {
-        // const { data } = await deleteTalk({
-        //   talk_id: this.talkId
-        // })
-        // if (data.noerr === 1) {
-        //   throw new Error()
-        // }
-        // this.page = 1
-        // this.fetchRequest(this.page, this.count)
+        const { data } = await deleteTopic({
+          topic_id: this.topicId
+        })
+        if (data.noerr === 1) {
+          throw new Error()
+        }
+        this.page = 1
+        this.fetchRequest(this.page, this.count)
         this.$message.success('删除成功')
       } catch (err) {
         this.$message.error('删除失败')
@@ -148,13 +149,13 @@ export default {
         this.closeDeleteDialog()
       }
     },
-    showDisableTalk(index, tableData) {
-      const talkId = tableData[index].talk_id
-      this.talkId = talkId
-      this.dialogTxt = this.statusTxt(tableData[index].talk_status)[2]
+    showDisableTopic(index, tableData) {
+      const topicId = tableData[index].topic_id
+      this.topicId = topicId
+      this.dialogTxt = this.statusTxt(tableData[index].topic_status)[2]
       this.opneDisableDialog()
     },
-    async disableTalkCallback() {
+    async disableTopicCallback() {
       const loading = this.$loading({
         lock: true,
         text: `${this.dialogTxt}中...`,
@@ -162,13 +163,13 @@ export default {
         background: 'rgba(0, 0, 0, 0.2)'
       })
       try {
-        // const { data } = await disableTalk({
-        //   talk_id: this.talkId
-        // })
-        // console.log(data)
-        // if (data.noerr === 1) {
-        //   throw new Error()
-        // }
+        const { data } = await disableTopic({
+          topic_id: this.topicId
+        })
+        console.log(data)
+        if (data.noerr === 1) {
+          throw new Error()
+        }
         this.$message.success(`${this.dialogTxt}成功`)
         this.page = 1
         this.fetchRequest(this.page, this.count)
@@ -180,19 +181,18 @@ export default {
       }
     },
     showPreviewTalg(index, tableData) {
-      const contentEncode = tableData[index].talk_content
-      this.talkContent = JSON.parse(contentEncode)
+      const contentEncode = tableData[index].topic_content
+      this.topicContent = JSON.parse(contentEncode)
       this.openPreviewDialog()
     },
     async fetchRequest(page, count) {
       try {
-        // const { data } = await getTalkList({
-        //   page,
-        //   count,
-        //   type: 'all'
-        // })
-        // console.log(data)
-        // this.tableData = data.data
+        const { data } = await getTopicList({
+          page,
+          count
+        })
+        console.log(data)
+        this.tableData = data.data
       } catch (err) {
         this.$message.error('获取列表失败')
       }
