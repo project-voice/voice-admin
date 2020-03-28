@@ -55,14 +55,14 @@
         </el-button>
       </el-button-group>
     </div>
-    <el-dialog title="心情权限" :visible.sync="disableDialogVisible" width="30%">
+    <el-dialog title="视频权限" :visible.sync="disableDialogVisible" width="30%">
       <span>是否{{ dialogTxt }}</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeDisableDialog">取 消</el-button>
         <el-button type="primary" @click="disableVideoCallback">确 定</el-button>
       </span>
     </el-dialog>
-    <el-dialog title="心情删除" :visible.sync="deleteDialogVisible" width="30%">
+    <el-dialog title="视频删除" :visible.sync="deleteDialogVisible" width="30%">
       <span>是否删除</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeDeleteDialog">取 消</el-button>

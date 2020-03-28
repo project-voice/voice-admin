@@ -3,19 +3,14 @@
     <div class="table-wrapper">
       <el-table :data="tableData" style="width: 100%" stripe="stripe" border="border">
         <el-table-column type="index" label="编号" width="80" align="center" />
-        <el-table-column prop="user_name" label="发布者" align="center" />
-        <el-table-column prop="comment" label="评论数" align="center" width="200" />
-        <el-table-column label="点赞数" align="center">
-          <template slot-scope="scope">
-            <span>{{ scope.row['like'].count }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="create_time" label="发布时间" align="center" />
-        <el-table-column prop="talk_status" label="状态" align="center">
+        <el-table-column prop="user_name" label="发布者" align="center" width="200" />
+        <el-table-column prop="feedback_content" label="反馈内容" align="center" />
+        <el-table-column prop="create_time" label="发布时间" align="center" width="200" />
+        <el-table-column prop="feedback_status" label="状态" align="center" width="200">
           <template slot-scope="scope">
             <span
-              :class="statusTxt(scope.row['talk_status'])[0]"
-            >{{ statusTxt(scope.row['talk_status'])[1] }}</span>
+              :class="statusTxt(scope.row['feedback_status'])[0]"
+            >{{ statusTxt(scope.row['feedback_status'])[1] }}</span>
           </template>
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="200" align="center">
@@ -23,17 +18,12 @@
             <el-button
               type="text"
               size="small"
-              @click.native.prevent="showPreviewTalg(scope.$index, tableData)"
-            >查看内容</el-button>
+              @click.native.prevent="showProcessFeedback(scope.$index, tableData)"
+            >{{ statusTxt(scope.row['feedback_status'])[2] }}</el-button>
             <el-button
               type="text"
               size="small"
-              @click.native.prevent="showDisableTalk(scope.$index, tableData)"
-            >{{ statusTxt(scope.row['talk_status'])[2] }}</el-button>
-            <el-button
-              type="text"
-              size="small"
-              @click.native.prevent="showDeleteTalk(scope.$index, tableData)"
+              @click.native.prevent="showDeleteFeedback(scope.$index, tableData)"
             >删除</el-button>
           </template>
         </el-table-column>
@@ -53,45 +43,39 @@
         </el-button>
       </el-button-group>
     </div>
-    <el-dialog title="心情权限" :visible.sync="disableDialogVisible" width="30%">
+    <el-dialog title="处理反馈" :visible.sync="processDialogVisible" width="30%">
       <span>是否{{ dialogTxt }}</span>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="closeDisableDialog">取 消</el-button>
-        <el-button type="primary" @click="disableTalkCallback">确 定</el-button>
+        <el-button @click="closeProcessDialog">取 消</el-button>
+        <el-button type="primary" @click="processFeedbackCallback">确 定</el-button>
       </span>
     </el-dialog>
     <el-dialog title="心情删除" :visible.sync="deleteDialogVisible" width="30%">
       <span>是否删除</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeDeleteDialog">取 消</el-button>
-        <el-button type="primary" @click="deleteTalkCallback">确 定</el-button>
+        <el-button type="primary" @click="deleteFeedbackCallback">确 定</el-button>
       </span>
     </el-dialog>
     <el-dialog title="心情内容" :visible.sync="previewDialogVisible" width="30%">
       <div class="content-wrapper">
-        <p class="txt">{{ talkContent.content }}</p>
-        <div class="image-wrapper">
-          <img v-for="(url,index) in talkContent.images" :key="index" class="image" :src="url" alt="">
-        </div>
+        内容
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script>
+import { getFeedbackList, deleteFeedback, updateStatus } from '@/api/feedback'
 export default {
   name: 'User',
   data() {
     return {
       page: 1,
       count: 10,
-      dialogTxt: '禁用',
-      talkId: 0,
-      talkContent: {
-        content: '',
-        images: []
-      },
-      disableDialogVisible: false,
+      dialogTxt: '未处理',
+      feedbackId: 0,
+      processDialogVisible: false,
       deleteDialogVisible: false,
       previewDialogVisible: false,
       tableData: []
@@ -113,18 +97,18 @@ export default {
     closeDeleteDialog() {
       this.deleteDialogVisible = false
     },
-    opneDisableDialog() {
-      this.disableDialogVisible = true
+    opneProcessDialog() {
+      this.processDialogVisible = true
     },
-    closeDisableDialog() {
-      this.disableDialogVisible = false
+    closeProcessDialog() {
+      this.processDialogVisible = false
     },
-    showDeleteTalk(index, tableData) {
-      const talkId = tableData[index].talk_id
-      this.talkId = talkId
+    showDeleteFeedback(index, tableData) {
+      const feedbackId = tableData[index].feedback_id
+      this.feedbackId = feedbackId
       this.openDeleteDialog()
     },
-    async deleteTalkCallback() {
+    async deleteFeedbackCallback() {
       const loading = this.$loading({
         lock: true,
         text: `${this.dialogTxt}中...`,
@@ -132,14 +116,14 @@ export default {
         background: 'rgba(0, 0, 0, 0.2)'
       })
       try {
-        // const { data } = await deleteTalk({
-        //   talk_id: this.talkId
-        // })
-        // if (data.noerr === 1) {
-        //   throw new Error()
-        // }
-        // this.page = 1
-        // this.fetchRequest(this.page, this.count)
+        const { data } = await deleteFeedback({
+          feedback_id: this.feedbackId
+        })
+        if (data.noerr === 1) {
+          throw new Error()
+        }
+        this.page = 1
+        this.fetchRequest(this.page, this.count)
         this.$message.success('删除成功')
       } catch (err) {
         this.$message.error('删除失败')
@@ -148,13 +132,17 @@ export default {
         this.closeDeleteDialog()
       }
     },
-    showDisableTalk(index, tableData) {
-      const talkId = tableData[index].talk_id
-      this.talkId = talkId
-      this.dialogTxt = this.statusTxt(tableData[index].talk_status)[2]
-      this.opneDisableDialog()
+    showProcessFeedback(index, tableData) {
+      const txt = this.statusTxt(tableData[index].feedback_status)[2]
+      if (txt === '已处理') {
+        return
+      }
+      const feedbackId = tableData[index].feedback_id
+      this.feedbackId = feedbackId
+      this.dialogTxt = this.statusTxt(tableData[index].feedback_status)[2]
+      this.opneProcessDialog()
     },
-    async disableTalkCallback() {
+    async processFeedbackCallback() {
       const loading = this.$loading({
         lock: true,
         text: `${this.dialogTxt}中...`,
@@ -162,13 +150,13 @@ export default {
         background: 'rgba(0, 0, 0, 0.2)'
       })
       try {
-        // const { data } = await disableTalk({
-        //   talk_id: this.talkId
-        // })
-        // console.log(data)
-        // if (data.noerr === 1) {
-        //   throw new Error()
-        // }
+        const { data } = await updateStatus({
+          feedback_id: this.feedbackId,
+          feedback_status: 1
+        })
+        if (data.noerr === 1) {
+          throw new Error()
+        }
         this.$message.success(`${this.dialogTxt}成功`)
         this.page = 1
         this.fetchRequest(this.page, this.count)
@@ -176,23 +164,19 @@ export default {
         this.$message.error(`${this.dialogTxt}失败`)
       } finally {
         loading.close()
-        this.closeDisableDialog()
+        this.closeProcessDialog()
       }
     },
     showPreviewTalg(index, tableData) {
-      const contentEncode = tableData[index].talk_content
-      this.talkContent = JSON.parse(contentEncode)
       this.openPreviewDialog()
     },
     async fetchRequest(page, count) {
       try {
-        // const { data } = await getTalkList({
-        //   page,
-        //   count,
-        //   type: 'all'
-        // })
-        // console.log(data)
-        // this.tableData = data.data
+        const { data } = await getFeedbackList({
+          page,
+          count
+        })
+        this.tableData = data.data
       } catch (err) {
         this.$message.error('获取列表失败')
       }
@@ -207,9 +191,9 @@ export default {
     },
     statusTxt(status) {
       if (+status === 1) {
-        return ['status-1', '禁用', '启用']
+        return ['status-1', '已处理', '已处理']
       }
-      return ['status-0', '正常', '禁用']
+      return ['status-0', '未处理', '处理']
     }
   }
 }
@@ -221,10 +205,10 @@ export default {
   padding: 20px;
 }
 .status-0 {
-  color: green;
+  color: red;
 }
 .status-1 {
-  color: red;
+  color: green;
 }
 .bottom-button {
   margin-top: 10px;
