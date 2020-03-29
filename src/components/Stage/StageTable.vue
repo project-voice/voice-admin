@@ -2,11 +2,12 @@
   <div>
     <el-table :data="tableData" style="width: 100%" stripe="stripe" border="border">
       <el-table-column type="index" label="编号" width="120" align="center" />
-      <el-table-column prop="resource_type" label="科目" align="center" />
-      <el-table-column prop="resource_title" label="标题" align="center" />
-      <el-table-column prop="resource_url" label="链接" align="center" width="500" />
-      <el-table-column prop="resource_ident" label="密钥" align="center" />
-
+      <el-table-column prop="stage_tag" label="标签" align="center" width="100" />
+      <el-table-column prop="stage_title" label="标题" align="center" width="150" />
+      <el-table-column prop="stage_num" label="阶段" align="center" width="100" />
+      <el-table-column prop="stage_description" label="描述" align="center" />
+      <el-table-column prop="stage_banner" label="展示图地址" align="center" />
+      <el-table-column prop="userCount" label="学习人数" align="center" width="100" />
       <el-table-column fixed="right" label="操作" width="120" align="center">
         <template slot-scope="scope">
           <el-button
@@ -35,7 +36,7 @@
 <script>
 const DELETE_EVENT = 'delete'
 const UPLOAD_EVENT = 'upload'
-// import { deleteResource } from '@/api/resource'
+import { deleteState } from '@/api/speak'
 export default {
   props: {
     tableData: {
@@ -75,13 +76,13 @@ export default {
       })
 
       try {
-        // const { data } = await deleteResource({
-        //   resource_id: this.tableData[this.currentIdx].resource_id
-        // })
-        // console.log(data)
-        // if (data.noerr === 1) {
-        //   throw new Error()
-        // }
+        const { data } = await deleteState({
+          stage_id: this.tableData[this.currentIdx].stage_id
+        })
+        console.log(data)
+        if (data.noerr === 1) {
+          throw new Error()
+        }
         loading.close()
         this.$message.success('删除成功')
         this.$emit(DELETE_EVENT)

@@ -6,8 +6,8 @@
       :show-file-list="false"
       :on-success="handleBannerSuccess"
     >
-      <img v-if="imageUrl" :src="imageUrl" class="avatar" />
-      <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+      <img v-if="imageUrl" :src="imageUrl" class="avatar">
+      <i v-else class="el-icon-plus avatar-uploader-icon" />
     </el-upload>
   </div>
 </template>
@@ -16,7 +16,12 @@
 const CLICK_EVENT = 'upload'
 export default {
   name: 'Upload',
-
+  props: {
+    image: {
+      type: String,
+      default: ''
+    }
+  },
   data() {
     return {
       imageUrl: '',
@@ -26,6 +31,12 @@ export default {
         key: ''
       }
     }
+  },
+  created() {
+    this.imageUrl = this.image
+  },
+  updated() {
+    this.imageUrl = this.image
   },
   methods: {
     clean() {
