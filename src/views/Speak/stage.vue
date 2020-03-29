@@ -53,7 +53,7 @@
             </el-form-item>
           </el-form>
           <span slot="footer" class="dialog-footer">
-            <el-button type="primary" @click="requestCallback">发布</el-button>
+            <el-button type="primary" @click="requestCallback">提交</el-button>
           </span>
         </el-dialog>
       </el-button>
