@@ -22,7 +22,7 @@
         </template>
       </el-table-column>
     </el-table>
-    <el-dialog title="删除资源" :visible.sync="dialogVisible" width="30%">
+    <el-dialog title="删除题目" :visible.sync="dialogVisible" width="30%">
       <span>是否删除</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeDialog">取 消</el-button>
